@@ -1,57 +1,43 @@
 const GITHUB_USER = 'sebimala';
 
+const FALLBACK_REPOS = [
+  {
+    id: 1,
+    name: 'portofolio',
+    description: 'Interactive brutalist portfolio built with React, Vite, and Tailwind CSS.',
+    stargazers_count: 0,
+    forks_count: 0,
+    html_url: 'https://github.com/sebimala/portofolio',
+    updated_at: new Date().toISOString(),
+    language: 'JavaScript'
+  },
+  {
+    id: 2,
+    name: 'filament spool holder',
+    description: 'Custom 3D printing project and utility design.',
+    stargazers_count: 0,
+    forks_count: 0,
+    html_url: 'https://github.com/sebimala',
+    updated_at: new Date().toISOString(),
+    language: '3D/CAD'
+  }
+];
+
 export async function fetchProfileBio() {
   try {
-    const res = await fetch(`https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_USER}/main/README.md`);
-    if (res.ok) {
-      const text = await res.text();
-      // Clean up markdown headers/formatting for summary bio
-      return text.replace(/#+/g, '').replace(/\[(.*?)\]\(.*?\)/g, '$1').trim().slice(0, 320) + '...';
+    const res = await fetch(`https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_USER}/main/README.md`); if (res.ok) { const text = await res.text(); return text.replace(/#+/g, '').replace(/\[(.*?)\]\(.*?\)/g, '$1').trim().slice(0, 320) + '...'; } } catch (e) { console.warn('Bio fetch failed, using fallback.'); } return 'Creative developer focused on building lightweight, performant web applications and experimental user interfaces.'; }  export async function fetchRepositories() { try { const res = await fetch(`https://api.github.com/users/${GITHUB_USER}/repos?per_page=100&sort=updated`);
+    const data = await res.json();
+
+    // If GitHub sends an error object (like rate limit exceeded) instead of an array
+    if (!Array.isArray(data)) {
+      console.warn('GitHub API rate limit exceeded. Using fallback projects.');
+      return FALLBACK_REPOS;
     }
-  } catch (e) {
-    console.error('Failed to load profile README', e);
-  }
-  return 'Creative developer focused on building lightweight, performant web applications and experimental user interfaces.';
-}
 
-export async function fetchRepositories() {
-  const res = await fetch(`https://api.github.com/users/${GITHUB_USER}/repos?per_page=100&sort=updated`);
-  if (!res.ok) throw new Error('Failed to fetch repositories from GitHub');
-
-  const data = await res.json();
-
-  // Exclude forks AND the special user profile repository
-  const filtered = data.filter(
-    (repo) => !repo.fork && repo.name.toLowerCase() !== GITHUB_USER.toLowerCase()
-  );
-
-  return Promise.all(
-    filtered.map(async (repo) => {
-      // Fetch language composition bytes
-      let languages = [];
-      try {
-        const langRes = await fetch(repo.languages_url);
-        const langData = await langRes.json();
-        const totalBytes = Object.values(langData).reduce((a, b) => a + b, 0);
-
-        languages = Object.entries(langData).map(([name, bytes]) => ({
-          name,
-          percentage: totalBytes > 0 ? ((bytes / totalBytes) * 100).toFixed(1) : '0',
-        }));
-      } catch (e) {
-        languages = [{ name: repo.language || 'Code', percentage: '100.0' }];
-      }
-
-      // Generate fallback description if missing
-      const description =
-        repo.description ||
-        `An open-source repository written primarily in ${repo.language || 'code'}, focusing on modular architecture and clean code implementation.`;
-
-      return {
+    // Filter out forks and the profile repository
+    return data
+      .filter((repo) => !repo.fork && repo.name.toLowerCase() !== GITHUB_USER.toLowerCase())
+      .map((repo) => ({
         ...repo,
-        languages,
-        description,
-      };
-    })
-  );
-}
+        language: repo.language || 'Mixed / Code',
+        description: repo.description || `An open-source repository

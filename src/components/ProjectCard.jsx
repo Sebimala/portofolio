@@ -1,75 +1,39 @@
-import React, { useState, useEffect } from 'react';
-import { fetchRepositories, fetchProfileBio } from './services/github';
-import Header from './components/Header';
-import ProjectCard from './components/ProjectCard';
-import ProjectDetail from './components/ProjectDetail';
-import Loader from './components/Loader';
+import React from 'react';
+import { ArrowUpRight, Star, GitFork } from 'lucide-react';
 
-export default function App() {
-  const [repos, setRepos] = useState([]);
-  const [bio, setBio] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [selectedRepo, setSelectedRepo] = useState(null);
-
-  useEffect(() => {
-    async function loadData() {
-      try {
-        const [repoData, bioData] = await Promise.all([
-          fetchRepositories(),
-          fetchProfileBio(),
-        ]);
-        setRepos(repoData);
-        setBio(bioData);
-      } catch (err) {
-        console.error('Error loading portfolio data:', err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadData();
-  }, []);
-
-  if (loading) return <Loader />;
-
-  if (selectedRepo) {
-    return (
-      <ProjectDetail
-        repo={selectedRepo}
-        onBack={() => setSelectedRepo(null)}
-      />
-    );
-  }
-
+export default function ProjectCard({ repo, onSelect }) {
   return (
-    <div className="min-h-screen bg-black text-white p-6 md:p-16 max-w-7xl mx-auto relative">
-      <div className="fixed inset-0 pointer-events-none opacity-5 noise-overlay z-50" />
-      <Header bio={bio} repoCount={repos.length} />
-
-      <main className="mt-16">
-        <div className="flex justify-between items-center mb-8">
-          <h2 className="text-xs font-mono uppercase tracking-widest text-neutral-400">
-            // Selected Works Index
-          </h2>
-          <span className="text-xs font-mono text-neutral-500">
-            Click project to inspect
+    <div
+      onClick={() => onSelect(repo)}
+      className="group border border-white/15 p-8 cursor-pointer hover:bg-white hover:text-black transition-all duration-300 flex flex-col justify-between min-h-[220px]"
+    >
+      <div className="flex justify-between items-start gap-4">
+        <div>
+          <span className="text-xs font-mono text-neutral-500 group-hover:text-neutral-700 uppercase tracking-wider">
+            {repo.language}
           </span>
+          <h2 className="text-3xl md:text-4xl font-bold tracking-tight group-hover:italic transition-all mt-1">
+            {repo.name}
+          </h2>
         </div>
+        <ArrowUpRight className="w-8 h-8 opacity-40 group-hover:opacity-100 group-hover:translate-x-1 group-hover:-translate-y-1 transition-all" />
+      </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {repos.map((repo) => (
-            <ProjectCard
-              key={repo.id}
-              repo={repo}
-              onSelect={setSelectedRepo}
-            />
-          ))}
-        </div>
-      </main>
+      <p className="text-sm line-clamp-2 text-neutral-400 group-hover:text-neutral-800 my-4">
+        {repo.description}
+      </p>
 
-      <footer className="mt-24 pt-8 border-t border-white/10 text-xs font-mono text-neutral-500 flex justify-between">
-        <span>© {new Date().getFullYear()} Sebimala</span>
-        <span>Built with React + Vite</span>
-      </footer>
+      <div className="flex items-center gap-6 pt-4 border-t border-white/10 group-hover:border-black/20 text-xs font-mono text-neutral-400 group-hover:text-black">
+        <span className="flex items-center gap-1">
+          <Star className="w-3.5 h-3.5" /> {repo.stargazers_count}
+        </span>
+        <span className="flex items-center gap-1">
+          <GitFork className="w-3.5 h-3.5" /> {repo.forks_count}
+        </span>
+        <span className="ml-auto uppercase tracking-widest text-[10px]">
+          View Specs →
+        </span>
+      </div>
     </div>
   );
 }
